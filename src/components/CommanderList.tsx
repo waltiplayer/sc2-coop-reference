@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface BuildStep {
     supplyCount: number;
@@ -12,11 +12,18 @@ interface Commander {
     link: string;
 }
 
-const CommanderList: React.FC = () => {
+interface CommanderListProps {
+    selectedId: string | null;
+    onSelect: (id: string) => void;
+}
+
+const CommanderList: React.FC<CommanderListProps> = ({ selectedId, onSelect }) => {
     const [commanders, setCommanders] = useState<Commander[]>([]);
-    const [selectedCommander, setCommander] = useState<Commander | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+
+    const selectedIdRef = useRef(selectedId);
+    selectedIdRef.current = selectedId;
 
     useEffect(() => {
         const fetchCommanders = async () => {
@@ -27,7 +34,14 @@ const CommanderList: React.FC = () => {
                 }
                 const data: Commander[] = await response.json();
                 setCommanders(data);
-                setCommander(data[0]);
+
+                // Initialize selection based on prop, validate against fetched data
+                if (selectedIdRef.current && data.find(c => c.id === selectedIdRef.current)) {
+                    // selectedId is valid, keep it
+                } else if (data.length > 0) {
+                    // Invalid or missing selectedId, fall back to first item
+                    onSelect(data[0].id);
+                }
             } catch (e) {
                 setError(e instanceof Error ? e.message : "Unknown error");
             } finally {
@@ -37,6 +51,9 @@ const CommanderList: React.FC = () => {
         fetchCommanders();
     }, []);
 
+    // Get selected commander based on selectedId prop
+    const selectedCommander = commanders.find(c => c.id === selectedId) ?? null;
+
     if (loading) return <p>Loading...</p>;
     if (error) return <p>Error: {error}</p>;
 
@@ -44,8 +61,8 @@ const CommanderList: React.FC = () => {
         <div>
             <h1>Build Orders</h1>
             <select
-                value={selectedCommander?.id}
-                onChange={(e) => setCommander(commanders.find(commander => commander.id === e.target.value) ?? null)}
+                value={selectedId ?? ''}
+                onChange={(e) => onSelect(e.target.value)}
             >
                 {commanders.map((commander) => (
                     <option key={commander.id} value={commander.id}>

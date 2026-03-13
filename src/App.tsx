@@ -1,10 +1,46 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import CommanderList from './components/CommanderList';
 import MapList from "./components/MapList";
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
+  const [selectedCommander, setSelectedCommander] = useState<string | null>(null);
+  const [selectedMap, setSelectedMap] = useState<string | null>(null);
+
+  // Parse URL query parameters on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const commanderParam = params.get('commander');
+    const mapParam = params.get('map');
+    
+    if (commanderParam) {
+      setSelectedCommander(commanderParam);
+    }
+    if (mapParam) {
+      setSelectedMap(mapParam);
+    }
+  }, []);
+
+  // Update URL when commander selection changes
+  const handleCommanderSelect = useCallback((id: string) => {
+    setSelectedCommander(id);
+    updateUrlParam('commander', id);
+  }, []);
+
+  // Update URL when map selection changes
+  const handleMapSelect = useCallback((id: string) => {
+    setSelectedMap(id);
+    updateUrlParam('map', id);
+  }, []);
+
+  // Helper to update URL query parameter without page reload
+  const updateUrlParam = (key: string, value: string) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set(key, value);
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', newUrl);
+  };
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
@@ -38,8 +74,8 @@ const App: React.FC = () => {
       </div>
       <hr/>
       <div className="grid">
-        <CommanderList/>
-        <MapList/>
+        <CommanderList selectedId={selectedCommander} onSelect={handleCommanderSelect}/>
+        <MapList selectedId={selectedMap} onSelect={handleMapSelect}/>
       </div>
     </div>
   );

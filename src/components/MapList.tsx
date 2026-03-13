@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 
 interface Map {
     name: string;
@@ -23,11 +23,18 @@ interface Column {
     key: string;
 }
 
-const MapList: React.FC = () => {
+interface MapListProps {
+    selectedId: string | null;
+    onSelect: (id: string) => void;
+}
+
+const MapList: React.FC<MapListProps> = ({ selectedId, onSelect }) => {
     const [maps, setMaps] = useState<Map[]>([]);
-    const [selectedMap, setSelectedMap] = useState<Map | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+
+    const selectedIdRef = useRef(selectedId);
+    selectedIdRef.current = selectedId;
 
     useEffect(() => {
         const fetchMaps = async () => {
@@ -38,7 +45,14 @@ const MapList: React.FC = () => {
                 }
                 const data: Map[] = await response.json();
                 setMaps(data);
-                setSelectedMap(data[0]);
+
+                // Initialize selection based on prop, validate against fetched data
+                if (selectedIdRef.current && data.find(m => m.id === selectedIdRef.current)) {
+                    // selectedId is valid, keep it
+                } else if (data.length > 0) {
+                    // Invalid or missing selectedId, fall back to first item
+                    onSelect(data[0].id);
+                }
             } catch (e) {
                 setError(e instanceof Error ? e.message : "Unknown error");
             } finally {
@@ -48,6 +62,9 @@ const MapList: React.FC = () => {
         fetchMaps();
     }, []);
 
+    // Get selected map based on selectedId prop
+    const selectedMap = maps.find(m => m.id === selectedId) ?? null;
+
     if (loading) return <p>Loading...</p>;
     if (error) return <p>Error: {error}</p>;
 
@@ -55,8 +72,8 @@ const MapList: React.FC = () => {
         <div>
             <h1>Map Timings</h1>
             <select
-                value={selectedMap?.id}
-                onChange={e => setSelectedMap(maps.find(m => m.id === e.target.value) ?? null)}
+                value={selectedId ?? ''}
+                onChange={e => onSelect(e.target.value)}
                 name="mapSelector"
                 id="mapSelector"
             >
