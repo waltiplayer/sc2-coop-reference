@@ -36,6 +36,9 @@ const MapList: React.FC<MapListProps> = ({ selectedId, onSelect }) => {
     const selectedIdRef = useRef(selectedId);
     selectedIdRef.current = selectedId;
 
+    const onSelectRef = useRef(onSelect);
+    onSelectRef.current = onSelect;
+
     useEffect(() => {
         const fetchMaps = async () => {
             try {
@@ -51,7 +54,7 @@ const MapList: React.FC<MapListProps> = ({ selectedId, onSelect }) => {
                     // selectedId is valid, keep it
                 } else if (data.length > 0) {
                     // Invalid or missing selectedId, fall back to first item
-                    onSelect(data[0].id);
+                    onSelectRef.current(data[0].id);
                 }
             } catch (e) {
                 setError(e instanceof Error ? e.message : "Unknown error");
